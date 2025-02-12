@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "1"
+        max-size: "100k"
+
+  nginx:
+    restart: unless-stopped
+    image: nginx
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx:/etc/nginx/user_conf.d:ro
+    depends_on:
+      - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100k"
+        max-file: "1"
