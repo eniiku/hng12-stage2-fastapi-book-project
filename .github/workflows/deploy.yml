@@ -19,25 +19,30 @@ jobs:
       - name: "Checkout"
         uses: "actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332" # actions/checkout@v4
 
-      - name: Set up SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VM_IP }}
-          username: ${{ secrets.VM_USERNAME }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          script: |
-            cd hng12-stage2-fastapi-book-project/
-            git pull origin main
-            sudo docker build -t fastapi-app .
-            sudo docker stop fastapi-app || true
-            sudo docker rm fastapi-app || true
-            sudo docker run -d --name fastapi-app -p 8000:8000 fastapi-app
+      - name: "Install ssh keys"
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_IP }} > ~/.ssh/known_hosts
 
-            # Copy the nginx.conf file to the VM
-            sudo cp ./nginx.conf /etc/nginx/sites-available/default
+      - name: "Connect to vm, pull latest changes & reload app"
+        run: |
+          ssh ${{ secrets.VM_USERNAME }}@${{ secrets.SSH_HOST }}
+          cd hng12-stage2-fastapi-book-project/
+          git pull origin main
+          sudo docker build -t fastapi-app .
+          sudo docker stop fastapi-app || true
+          sudo docker rm fastapi-app || true
+          sudo docker run -d --name fastapi-app -p 8000:8000 fastapi-app
 
-            # Test the Nginx configuration
-            sudo nginx -t
+          # Copy the nginx.conf file to the VM
+          sudo cp ./nginx.conf /etc/nginx/sites-available/default
 
-            # Reload Nginx to apply the new configuration
-            sudo systemctl reload nginx
+          # Test the Nginx configuration
+          sudo nginx -t
+
+          # Reload Nginx to apply the new configuration
+          sudo systemctl reload nginx
+
+      - name: cleanup
+        run: rm -rf ~/.ssh
