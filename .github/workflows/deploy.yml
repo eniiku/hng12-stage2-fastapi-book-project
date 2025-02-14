@@ -4,10 +4,6 @@ on:
   push: 
     branches:
       - main
-  pull_request:
-    types: [closed]
-    branches:
-      - main
 
 jobs:
   deploy:
@@ -36,16 +32,6 @@ jobs:
           sudo docker stop fastapi-app || true
           sudo docker rm fastapi-app || true
           sudo docker run -d --name fastapi-app -p 8000:8000 fastapi-app
-
-          # Copy the nginx.conf file to the VM
-          sudo cp ./nginx.conf /etc/nginx/nginx.conf
-
-          # Test the Nginx configuration
-          sudo nginx -t
-
-          # Reload Nginx to apply the new configuration
-          sudo systemctl reload nginx
-          EOF
 
       - name: cleanup
         run: rm -rf ~/.ssh
